@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "High-performance multi-step cash offer form",
   "scripts": {
-    "build": "node scripts/optimize.js",
+    "build": "npm install && node scripts/optimize.js",
     "dev": "cp src/form.html dist/index.html",
-    "clean": "rm -rf dist/* && touch dist/.gitkeep"
+    "clean": "rm -rf dist/* && touch dist/.gitkeep",
+    "install:prod": "npm ci --production"
   },
   "devDependencies": {
     "html-minifier-terser": "^7.2.0",
