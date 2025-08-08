@@ -1,0 +1,15 @@
+{
+  "name": "cash-offer-form-hosting",
+  "version": "1.0.0",
+  "description": "High-performance multi-step cash offer form",
+  "scripts": {
+    "build": "node scripts/optimize.js",
+    "dev": "cp src/form.html dist/index.html",
+    "clean": "rm -rf dist/* && touch dist/.gitkeep"
+  },
+  "devDependencies": {
+    "html-minifier-terser": "^7.2.0",
+    "clean-css": "^5.3.3",
+    "uglify-js": "^3.17.4"
+  }
+}

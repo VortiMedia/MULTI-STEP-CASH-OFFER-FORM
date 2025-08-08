@@ -1,0 +1,63 @@
+<!-- FRAMER CUSTOM HEAD CODE -->
+<!-- Add this to Framer Settings > Custom Code > Head -->
+<script>
+(function(){
+  let currentHeight = 180;
+  let resizeTimeout = null;
+  
+  function setFrameHeight(height) {
+    const frames = document.querySelectorAll('#cashOfferForm, iframe[src*="cash-offer-form"]');
+    frames.forEach(frame => {
+      if (frame) {
+        frame.style.height = height + 'px';
+        frame.style.minHeight = height + 'px';
+        const container = frame.closest('[data-framer-component-type]');
+        if (container) {
+          container.style.minHeight = height + 'px';
+          container.style.height = 'auto';
+        }
+      }
+    });
+  }
+  
+  window.addEventListener('message', function(e) {
+    // Validate origin
+    if (!e.origin.includes('cash-offer-form.pages.dev') && 
+        !e.origin.includes('yourdomain.com')) return;
+    
+    if (e.data && e.data.type === 'resize-embed') {
+      const newHeight = parseInt(e.data.height) || 180;
+      
+      if (Math.abs(newHeight - currentHeight) > 5) {
+        currentHeight = newHeight;
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          setFrameHeight(newHeight);
+        }, 10);
+      }
+    }
+    
+    // Forward tracking events
+    if (e.data && e.data.type === 'tracking-event') {
+      if (window.dataLayer) {
+        window.dataLayer.push(e.data.payload);
+      }
+    }
+  });
+  
+  window.addEventListener('DOMContentLoaded', () => {
+    setFrameHeight(180);
+  });
+})();
+</script>
+<style>
+#cashOfferForm {
+  width: 100% !important;
+  border: none !important;
+  transition: height 0.2s ease !important;
+}
+[data-framer-component-type="Embed"] {
+  overflow: visible !important;
+  min-height: 180px !important;
+}
+</style>

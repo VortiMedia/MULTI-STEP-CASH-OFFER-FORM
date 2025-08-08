@@ -1,0 +1,18 @@
+{
+  "build": {
+    "command": "npm run build",
+    "directory": "dist"
+  },
+  "headers": {
+    "/*": {
+      "Cache-Control": "public, max-age=3600, s-maxage=3600",
+      "X-Frame-Options": "ALLOWALL",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type"
+    },
+    "/index.html": {
+      "Cache-Control": "public, max-age=3600, s-maxage=3600"
+    }
+  }
+}
