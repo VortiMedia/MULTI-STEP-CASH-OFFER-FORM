@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iframe Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .iframe-container {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: height 0.3s ease;
+        }
+        
+        #form-iframe {
+            width: 100%;
+            border: none;
+            height: 600px;
+            transition: height 0.3s ease;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Multi-Step Cash Offer Form - Iframe Integration Test</h1>
+        
+        <p>This page tests the iframe integration with automatic resizing during step transitions.</p>
+        
+        <div class="iframe-container">
+            <iframe 
+                id="form-iframe" 
+                src="multi-step-cash-offer-form.html"
+                scrolling="no">
+            </iframe>
+        </div>
+        
+        <div class="status" id="status">
+            Waiting for iframe messages...
+        </div>
+    </div>
+    
+    <script>
+        const iframe = document.getElementById('form-iframe');
+        const status = document.getElementById('status');
+        
+        // Listen for resize messages from the iframe
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'resize-embed') {
+                const height = event.data.height;
+                iframe.style.height = height + 'px';
+                status.innerHTML = `Iframe resized to: ${height}px<br>Time: ${new Date().toLocaleTimeString()}`;
+                
+                console.log('Iframe resized to:', height);
+            }
+        });
+        
+        // Initial status
+        status.innerHTML = `Iframe loaded. Initial height: ${iframe.style.height}<br>Time: ${new Date().toLocaleTimeString()}`;
+    </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "allowedTools": [
+    "Edit",
+    "Read",
+    "Bash(grep:*)",
+    "Bash(sed:*)",
+    "Bash(cp:*)",
+    "Bash(cat:*)",
+    "Bash(find:*)",
+    "Bash(git:*)",
+    "Bash(npm:*)",
+    "Bash(node:*)",
+    "Bash(curl:*)",
+    "Bash(diff:*)",
+    "mcp__playwright__*",
+    "mcp__github__*",
+    "mcp__filesystem__*",
+    "mcp__sequential-thinking__*"
+  ],
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@microsoft/playwright-mcp@latest"],
+      "options": {
+        "browser": "chromium",
+        "headless": false,
+        "viewport": { "width": 440, "height": 800 }
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-filesystem", "."]
+    },
+    "sequential-thinking": {
+      "command": "node",
+      "args": ["scripts/sequential-thinking-server.js"]
+    }
+  },
+  "defaultContext": {
+    "includeFiles": ["CLAUDE.md", "multi-step-cash-offer-form.html"],
+    "excludePatterns": ["node_modules", ".git", "*.backup.*"]
+  }
+}
+EOF < /dev/null

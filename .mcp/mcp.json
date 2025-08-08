@@ -1,0 +1,26 @@
+{
+  "servers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@microsoft/playwright-mcp@latest"],
+      "env": {
+        "PLAYWRIGHT_BROWSERS_PATH": "~/.cache/ms-playwright"
+      }
+    },
+    "github": {
+      "command": "gh",
+      "args": ["api"],
+      "condition": "command -v gh"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-filesystem", "."],
+      "permissions": {
+        "read": true,
+        "write": true,
+        "watch": true
+      }
+    }
+  }
+}
+EOF < /dev/null
