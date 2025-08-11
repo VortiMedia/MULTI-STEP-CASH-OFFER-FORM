@@ -2395,97 +2395,167 @@
         }
     </script>
 
-    <!-- Ultra-compact auto-resize script -->
-    <script>
-    (function() {
-        let lastHeight = 0;
-        let initialized = false;
-        let debounceTimeout = null;
+    <!-- Replace your existing resize script with this improved version -->
+<script>
+(function() {
+    let lastHeight = 0;
+    let initialized = false;
+    
+    function getAccurateHeight() {
+        const container = document.querySelector('.container');
+        if (!container) return 180;
         
-        function getActualHeight() {
-            const container = document.querySelector('.container');
-            if (!container) return 140;
-            
-            // Get exact bottom position of container
-            const rect = container.getBoundingClientRect();
-            const bodyPadding = parseInt(window.getComputedStyle(document.body).paddingTop) || 0;
-            
-            // Calculate height from top of viewport to bottom of container
-            // Only count visible elements
-            let visibleHeight = 0;
-            const children = container.children;
-            for (let child of children) {
-                const childRect = child.getBoundingClientRect();
-                const childStyle = window.getComputedStyle(child);
-                if (childStyle.display !== 'none' && childStyle.visibility !== 'hidden' && childStyle.height !== '0px') {
-                    visibleHeight = Math.max(visibleHeight, child.offsetTop + child.offsetHeight);
-                }
-            }
-            
-            const height = bodyPadding + visibleHeight + bodyPadding;
-            
-            // Minimum 140px for step 1, max of calculated
-            return Math.max(Math.ceil(height), 140);
+        // Get all height factors
+        const bodyStyles = window.getComputedStyle(document.body);
+        const containerStyles = window.getComputedStyle(container);
+        
+        const bodyPaddingTop = parseInt(bodyStyles.paddingTop) || 0;
+        const bodyPaddingBottom = parseInt(bodyStyles.paddingBottom) || 0;
+        
+        const containerPaddingTop = parseInt(containerStyles.paddingTop) || 0;
+        const containerPaddingBottom = parseInt(containerStyles.paddingBottom) || 0;
+        const containerMarginTop = parseInt(containerStyles.marginTop) || 0;
+        const containerMarginBottom = parseInt(containerStyles.marginBottom) || 0;
+        
+        // Get the actual content height
+        let contentHeight = container.scrollHeight;
+        
+        // Check for active step
+        const activeStep = document.querySelector('.step.active');
+        if (activeStep) {
+            const stepHeight = activeStep.scrollHeight;
+            contentHeight = Math.max(contentHeight, stepHeight + containerPaddingTop + containerPaddingBottom);
         }
         
-        function sendHeight() {
-            // Clear previous timeout
-            if (debounceTimeout) {
-                clearTimeout(debounceTimeout);
-            }
-            
-            // Debounce the height calculation
-            debounceTimeout = setTimeout(() => {
-                const height = getActualHeight();
-                
-                // Only send if changed by more than 2px or not initialized
-                if (!initialized || Math.abs(height - lastHeight) > 2) {
-                    lastHeight = height;
-                    console.log('Sending height:', height);
-                    
-                    if (window.parent !== window) {
-                        window.parent.postMessage({
-                            type: 'resize-embed',
-                            height: height,
-                            source: 'cash-offer-form'
-                        }, '*');
-                    }
-                    
-                    initialized = true;
-                }
-            }, 10);
+        // Calculate total height
+        const totalHeight = contentHeight + 
+                          bodyPaddingTop + 
+                          bodyPaddingBottom + 
+                          containerMarginTop + 
+                          containerMarginBottom;
+        
+        // Step-specific minimums
+        const currentStep = window.formState?.currentStep || 1;
+        const minHeights = {
+            1: 180,  // Address step
+            2: 750   // Full form with preview
+        };
+        
+        // Account for Google Places dropdown (adds ~200px when open)
+        const pacContainer = document.querySelector('.pac-container');
+        if (pacContainer && pacContainer.style.display !== 'none') {
+            return Math.max(totalHeight + 200, 400);
         }
         
-        // Send initial height immediately
-        sendHeight();
+        return Math.max(Math.ceil(totalHeight), minHeights[currentStep] || 180);
+    }
+    
+    function sendHeight() {
+        const height = getAccurateHeight();
         
-        // Setup observers
-        window.addEventListener('load', sendHeight);
-        document.addEventListener('DOMContentLoaded', sendHeight);
-        
-        // Watch for changes with proper debouncing
-        const observer = new MutationObserver(() => {
-            sendHeight(); // This will be debounced internally
+        // Only send if changed or not initialized
+        if (!initialized || Math.abs(height - lastHeight) > 2) {
+            lastHeight = height;
+            
+            console.log('[Form] Sending height:', height, 'Step:', window.formState?.currentStep);
+            
+            // Send to parent window
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'resize-embed',
+                    height: height,
+                    step: window.formState?.currentStep || 1,
+                    source: 'cash-offer-form'
+                }, '*');
+            }
+            
+            initialized = true;
+        }
+    }
+    
+    // Initial height
+    sendHeight();
+    
+    // Monitor DOM changes
+    const observer = new MutationObserver(() => {
+        requestAnimationFrame(sendHeight);
+    });
+    
+    if (document.body) {
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'style']
         });
-        
-        if (document.body) {
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ['class', 'style']
-            });
-        }
-        
-        // Form interactions with debouncing
-        document.addEventListener('click', sendHeight);
-        document.addEventListener('input', sendHeight);
-        
-        // Handle focus/blur for mobile keyboards
-        document.addEventListener('focus', sendHeight, true);
-        document.addEventListener('blur', sendHeight, true);
-    })();
-    </script>
+    }
+    
+    // Monitor form interactions
+    document.addEventListener('click', () => setTimeout(sendHeight, 50));
+    document.addEventListener('input', () => setTimeout(sendHeight, 50));
+    document.addEventListener('change', () => setTimeout(sendHeight, 50));
+    document.addEventListener('focus', () => setTimeout(sendHeight, 100), true);
+    document.addEventListener('blur', () => setTimeout(sendHeight, 100), true);
+    
+    // Override showStep function to ensure resize on step change
+    const originalShowStep = window.showStep;
+    if (typeof window.showStep === 'function') {
+        window.showStep = function(step) {
+            const result = originalShowStep.call(this, step);
+            setTimeout(sendHeight, 150);
+            return result;
+        };
+    }
+    
+    // Periodic check as safety net
+    setInterval(sendHeight, 2000);
+    
+    // Handle window resize
+    window.addEventListener('resize', sendHeight);
+    window.addEventListener('load', sendHeight);
+})();
+</script>
+
+<!-- Add tracking forwarder -->
+<script>
+(function() {
+    // Forward dataLayer events to parent
+    if (window.dataLayer) {
+        const originalPush = window.dataLayer.push;
+        window.dataLayer.push = function() {
+            const result = originalPush.apply(window.dataLayer, arguments);
+            
+            // Forward to parent for GTM
+            if (window.parent !== window && arguments[0]) {
+                window.parent.postMessage({
+                    type: 'tracking-event',
+                    payload: arguments[0]
+                }, '*');
+            }
+            
+            return result;
+        };
+    }
+    
+    // Forward gtag calls
+    if (window.gtag) {
+        const originalGtag = window.gtag;
+        window.gtag = function() {
+            const result = originalGtag.apply(window, arguments);
+            
+            // Forward to parent
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'tracking-event',
+                    gtag: Array.from(arguments)
+                }, '*');
+            }
+            
+            return result;
+        };
+    }
+})();
+</script>
 </body>
 </html>
 <!-- Updated: Mon Aug 11 13:25:01 EDT 2025 -->
