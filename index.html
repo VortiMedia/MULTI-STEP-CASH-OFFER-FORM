@@ -1242,7 +1242,7 @@
         window.dataLayer = window.dataLayer || [];
 
         // Debug mode - set to true to see detailed console logs
-        window.DEBUG_MODE = true;
+        window.DEBUG_MODE = false; // Production mode - set to true for debugging
 
         // Override console.log to only show when in debug mode
         const originalLog = console.log;
@@ -2418,13 +2418,6 @@
             2: 750
         };
         
-        console.log('📏 Height calculation:', {
-            container: height,
-            buffer: buffer,
-            total: totalHeight,
-            step: currentStep
-        });
-        
         return Math.max(totalHeight, minHeights[currentStep] || 180);
     }
     
@@ -2432,6 +2425,15 @@
         const height = getAccurateHeight();
         
         if (!initialized || Math.abs(height - lastHeight) > 2) {
+            // Only log when height changes
+            if (height !== lastHeight) {
+                console.log('📏 Height changed:', {
+                    from: lastHeight,
+                    to: height,
+                    step: window.formState?.currentStep || 1
+                });
+            }
+            
             lastHeight = height;
             
             if (window.parent !== window) {
