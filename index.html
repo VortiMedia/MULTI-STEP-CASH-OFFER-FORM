@@ -6,6 +6,10 @@
     <meta name="description" content="Get a cash offer for your home in 24 hours. No repairs, no showings, close in 7 days.">
     <title>Get Cash for Your Home - Fast, Fair Offer</title>
     
+    <!-- Form Version 1.1.0 - Fixed Formspree submission handling -->
+    <meta name="form-version" content="1.1.0">
+    <meta name="last-updated" content="2025-08-11">
+    
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -1237,6 +1241,17 @@
         // Initialize dataLayer
         window.dataLayer = window.dataLayer || [];
 
+        // Debug mode - set to true to see detailed console logs
+        window.DEBUG_MODE = true;
+
+        // Override console.log to only show when in debug mode
+        const originalLog = console.log;
+        console.log = function() {
+            if (window.DEBUG_MODE) {
+                originalLog.apply(console, arguments);
+            }
+        };
+
         // Global variables for external access
         window.addressComponents = {};
         window.formState = {
@@ -2067,6 +2082,13 @@
             });
             
             try {
+                // Debug logging
+                console.log('📤 Submitting to Formspree:', {
+                    endpoint: FORMSPREE_ENDPOINT,
+                    formData: formDataObj,
+                    timestamp: new Date().toISOString()
+                });
+                
                 const response = await fetch(FORMSPREE_ENDPOINT, {
                     method: 'POST',
                     body: formDataForSubmission,
@@ -2075,7 +2097,24 @@
                     }
                 });
                 
-                if (response.ok) {
+                console.log('📥 Formspree response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok
+                });
+                
+                // Formspree returns 200, 201, or 303 for success
+                if (response.ok || response.status === 201 || response.status === 303) {
+                    console.log('✅ Form submitted successfully to Formspree');
+                    
+                    // Try to read response body for debugging
+                    try {
+                        const responseText = await response.text();
+                        console.log('Response body:', responseText);
+                    } catch (e) {
+                        console.log('Could not read response body (this is OK)');
+                    }
+                    
                     // Clear saved data
                     localStorage.removeItem('partialSubmission');
                     localStorage.removeItem('multiStepFormData');
@@ -2083,7 +2122,7 @@
                     // Prepare enhanced conversion data
                     const enhancedData = await prepareEnhancedConversionData(formDataObj);
                     
-                    // FIXED: Direct gtag enhanced conversions
+                    // Track conversion with Google Ads
                     if (window.gtag) {
                         gtag('event', 'conversion', {
                             'send_to': 'AW-17041538947/Mz6WCIDe2dMaEIP_hL4_',
@@ -2096,60 +2135,25 @@
                                 'last_name': enhancedData.lastName,
                                 'home_address': {
                                     'street': enhancedData.address,
-                                    'city': '',
-                                    'region': '',
-                                    'postal_code': '',
                                     'country': 'US'
                                 }
                             }
                         });
-                        console.log('Direct gtag conversion sent with enhanced data');
+                        console.log('📊 Google Ads conversion tracked');
                     }
                     
-                    // Keep existing dataLayer push for GTM compatibility
+                    // Push to dataLayer
                     const targetWindow = window.parent || window;
                     targetWindow.dataLayer = targetWindow.dataLayer || [];
-                    
                     targetWindow.dataLayer.push({
-                        'event': 'cash_offer_conversion',  // This MUST match your GTM trigger
+                        'event': 'cash_offer_conversion',
                         'form_type': 'multi_step',
-                        'total_steps': totalSteps,
-                        'conversion_data': {
-                            'conversion_id': '17041538947',
-                            'conversion_label': 'Mz6WCIDe2dMaEIP_hL4_',
-                            'value': 0,
-                            'currency': 'USD'
-                        },
-                        'user_data': {
-                            'email': enhancedData.email,
-                            'phone': enhancedData.phone,
-                            'full_name': enhancedData.fullName,
-                            'first_name': enhancedData.firstName,
-                            'last_name': enhancedData.lastName,
-                            'address': enhancedData.address,
-                            'postal_code': enhancedData.postalCode
-                        },
-                        'enhanced_conversions': enhancedData.enhanced_conversion_data
+                        'user_data': formDataObj
                     });
-                    
-                    // Log both for debugging
-                    console.log('Conversion event pushed:', 'cash_offer_conversion');
-                    console.log('Form data submitted:', formDataObj);
-                    console.log('Enhanced conversion data:', enhancedData);
-                    console.log('DataLayer after push:', targetWindow.dataLayer);
-                    
-                    // Also track for GA4
-                    if (window.gtag) {
-                        window.gtag('event', 'generate_lead', {
-                            'currency': 'USD',
-                            'value': 0,
-                            'lead_source': 'multi_step_cash_offer_form'
-                        });
-                    }
+                    console.log('📊 DataLayer conversion pushed');
                     
                     // Show success page
                     setTimeout(() => {
-                        // Personalize success page with user's name
                         const userNameEl = document.getElementById('userName');
                         if (userNameEl && formDataObj.firstName) {
                             userNameEl.textContent = formDataObj.firstName;
@@ -2159,43 +2163,34 @@
                         document.getElementById('formPage').classList.add('hide');
                         document.getElementById('successPage').classList.add('show');
                         
-                        // Track success page view
-                        targetWindow.dataLayer.push({
-                            'event': 'virtual_page_view',
-                            'page_path': '/multi-step-cash-offer-success',
-                            'page_title': 'Multi-Step Cash Offer Form Success'
-                        });
+                        // Notify parent frame
+                        if (window.parent !== window) {
+                            window.parent.postMessage({
+                                type: 'resize-embed',
+                                height: document.body.scrollHeight + 50,
+                                source: 'cash-offer-form'
+                            }, '*');
+                        }
                         
-                        // Trigger iframe resize for success page
-                        setTimeout(() => {
-                            if (window.parent !== window) {
-                                const height = document.body.scrollHeight;
-                                window.parent.postMessage({
-                                    type: 'resize-embed',
-                                    height: height + 50
-                                }, '*');
-                            }
-                        }, 100);
-                        
-                        // Scroll to top
                         window.scrollTo({ top: 0, behavior: 'smooth' });
+                        console.log('✅ Success page displayed');
                     }, 1500);
+                    
                 } else {
-                    submitBtn.disabled = false;
-                    throw new Error('Submission failed');
+                    throw new Error(`Formspree returned status: ${response.status}`);
                 }
+                
             } catch (error) {
-                console.error('Submission error:', error);
+                console.error('❌ Submission error:', error);
                 document.getElementById('loadingOverlay').classList.remove('show');
                 submitBtn.disabled = false;
-                alert('Sorry, there was an error. Please try again.');
                 
-                // Track error
+                alert('There was a temporary issue submitting your form. Please try again or call us directly at 914-743-8767.');
+                
                 window.dataLayer.push({
                     'event': 'form_error',
                     'error_message': error.message,
-                    'form_id': 'multi_step_cash_offer',
-                    'current_step': currentStep
+                    'form_id': 'multi_step_cash_offer'
                 });
             }
         }
@@ -2395,7 +2390,7 @@
         }
     </script>
 
-    <!-- Replace your existing resize script with this improved version -->
+    <!-- Enhanced resize script with improved height calculation -->
 <script>
 (function() {
     let lastHeight = 0;
@@ -2405,61 +2400,40 @@
         const container = document.querySelector('.container');
         if (!container) return 180;
         
-        // Get all height factors
-        const bodyStyles = window.getComputedStyle(document.body);
-        const containerStyles = window.getComputedStyle(container);
+        const rect = container.getBoundingClientRect();
+        const scrollHeight = container.scrollHeight;
+        const offsetHeight = container.offsetHeight;
         
-        const bodyPaddingTop = parseInt(bodyStyles.paddingTop) || 0;
-        const bodyPaddingBottom = parseInt(bodyStyles.paddingBottom) || 0;
+        // Use the larger of the values
+        const height = Math.max(rect.height, scrollHeight, offsetHeight);
         
-        const containerPaddingTop = parseInt(containerStyles.paddingTop) || 0;
-        const containerPaddingBottom = parseInt(containerStyles.paddingBottom) || 0;
-        const containerMarginTop = parseInt(containerStyles.marginTop) || 0;
-        const containerMarginBottom = parseInt(containerStyles.marginBottom) || 0;
-        
-        // Get the actual content height
-        let contentHeight = container.scrollHeight;
-        
-        // Check for active step
-        const activeStep = document.querySelector('.step.active');
-        if (activeStep) {
-            const stepHeight = activeStep.scrollHeight;
-            contentHeight = Math.max(contentHeight, stepHeight + containerPaddingTop + containerPaddingBottom);
-        }
-        
-        // Calculate total height
-        const totalHeight = contentHeight + 
-                          bodyPaddingTop + 
-                          bodyPaddingBottom + 
-                          containerMarginTop + 
-                          containerMarginBottom;
+        // Add buffer for safety
+        const buffer = 30;
+        const totalHeight = Math.ceil(height + buffer);
         
         // Step-specific minimums
         const currentStep = window.formState?.currentStep || 1;
         const minHeights = {
-            1: 180,  // Address step
-            2: 750   // Full form with preview
+            1: 180,
+            2: 750
         };
         
-        // Account for Google Places dropdown (adds ~200px when open)
-        const pacContainer = document.querySelector('.pac-container');
-        if (pacContainer && pacContainer.style.display !== 'none') {
-            return Math.max(totalHeight + 200, 400);
-        }
+        console.log('📏 Height calculation:', {
+            container: height,
+            buffer: buffer,
+            total: totalHeight,
+            step: currentStep
+        });
         
-        return Math.max(Math.ceil(totalHeight), minHeights[currentStep] || 180);
+        return Math.max(totalHeight, minHeights[currentStep] || 180);
     }
     
     function sendHeight() {
         const height = getAccurateHeight();
         
-        // Only send if changed or not initialized
         if (!initialized || Math.abs(height - lastHeight) > 2) {
             lastHeight = height;
             
-            console.log('[Form] Sending height:', height, 'Step:', window.formState?.currentStep);
-            
-            // Send to parent window
             if (window.parent !== window) {
                 window.parent.postMessage({
                     type: 'resize-embed',
@@ -2467,16 +2441,18 @@
                     step: window.formState?.currentStep || 1,
                     source: 'cash-offer-form'
                 }, '*');
+                
+                console.log('📤 Sent resize message:', height);
             }
             
             initialized = true;
         }
     }
     
-    // Initial height
+    // Initialize
     sendHeight();
     
-    // Monitor DOM changes
+    // Monitor changes
     const observer = new MutationObserver(() => {
         requestAnimationFrame(sendHeight);
     });
@@ -2490,27 +2466,14 @@
         });
     }
     
-    // Monitor form interactions
-    document.addEventListener('click', () => setTimeout(sendHeight, 50));
-    document.addEventListener('input', () => setTimeout(sendHeight, 50));
-    document.addEventListener('change', () => setTimeout(sendHeight, 50));
-    document.addEventListener('focus', () => setTimeout(sendHeight, 100), true);
-    document.addEventListener('blur', () => setTimeout(sendHeight, 100), true);
+    // Event listeners
+    ['click', 'input', 'change', 'focus', 'blur'].forEach(event => {
+        document.addEventListener(event, () => setTimeout(sendHeight, 50), true);
+    });
     
-    // Override showStep function to ensure resize on step change
-    const originalShowStep = window.showStep;
-    if (typeof window.showStep === 'function') {
-        window.showStep = function(step) {
-            const result = originalShowStep.call(this, step);
-            setTimeout(sendHeight, 150);
-            return result;
-        };
-    }
-    
-    // Periodic check as safety net
+    // Periodic check
     setInterval(sendHeight, 2000);
     
-    // Handle window resize
     window.addEventListener('resize', sendHeight);
     window.addEventListener('load', sendHeight);
 })();
