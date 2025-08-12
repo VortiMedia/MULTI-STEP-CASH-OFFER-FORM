@@ -1241,11 +1241,15 @@
                 console.log('📥 Formspree response:', {
                     status: response.status,
                     statusText: response.statusText,
-                    ok: response.ok
+                    ok: response.ok,
+                    headers: Array.from(response.headers.entries())
                 });
                 
-                // Formspree returns 200, 201, or 303 for success
-                if (response.ok || response.status === 201 || response.status === 303) {
+                // Formspree returns 200, 201, 303, or 422 (validation errors) for various states
+                // Accept any 2xx status code as success, plus 303 redirect
+                const isSuccess = (response.status >= 200 && response.status < 300) || response.status === 303;
+                
+                if (isSuccess) {
                     console.log('✅ Form submitted successfully to Formspree');
                     
                     // Try to read response body for debugging
@@ -1340,7 +1344,24 @@
                     }, 1500);
                     
                 } else {
-                    throw new Error(`Formspree returned status: ${response.status}`);
+                    // Log the exact response for debugging
+                    console.error('❌ Unexpected Formspree response:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        ok: response.ok
+                    });
+                    
+                    // Try to read the error response body
+                    let errorDetails = '';
+                    try {
+                        const errorText = await response.text();
+                        errorDetails = errorText ? ` - ${errorText}` : '';
+                        console.error('Error response body:', errorText);
+                    } catch (e) {
+                        console.error('Could not read error response body');
+                    }
+                    
+                    throw new Error(`Formspree returned status: ${response.status} ${response.statusText}${errorDetails}`);
                 }
                 
             } catch (error) {
