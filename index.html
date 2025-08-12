@@ -309,15 +309,17 @@
             background: #fef2f2;
             border: 1px solid #fca5a5;
             color: #dc2626;
-            padding: 8px 12px;
             border-radius: 8px;
             font-size: 13px;
-            margin-top: 8px;
-            display: none !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            animation: slideIn 0.3s ease;
+            line-height: 1.4;
+            display: none;
+            height: 0;
+            margin: 0;
+            padding: 0;
+            opacity: 0;
+            transform: translateY(-5px);
+            transition: all 0.2s ease;
+            overflow: hidden;
         }
         
         .inline-error.show {
@@ -325,6 +327,8 @@
             height: auto !important;
             margin-top: 8px !important;
             padding: 8px 12px !important;
+            opacity: 1 !important;
+            transform: translateY(0) !important;
         }
 
         /* Dropdown arrow indicator */
@@ -1617,17 +1621,25 @@
             
             if (locationInput) {
                 locationInput.placeholder = 'Enter your complete property location';
-                // Allow manual entry when Google Places fails
-                addressSelected = true;
-                hasSelectedFromDropdown = true;
+                // Note: Google Places is unavailable, but still require user to type complete address
+                // Don't automatically set addressSelected = true to maintain validation
                 
-                // Enable continue button for manual entry
-                if (continueBtn) {
-                    continueBtn.disabled = false;
-                    continueBtn.style.opacity = '1';
-                }
+                console.log('Fallback: Google Places unavailable - manual entry required');
                 
-                console.log('Fallback: Manual address entry enabled due to Google Places unavailable');
+                // Add fallback validation for when Google Places isn't available
+                locationInput.addEventListener('blur', function() {
+                    if (this.value.trim().length >= 10) {
+                        // For fallback, accept addresses that are reasonably complete
+                        addressSelected = true;
+                        hasSelectedFromDropdown = true;
+                        hideInlineError();
+                        
+                        if (continueBtn) {
+                            continueBtn.disabled = false;
+                            continueBtn.style.opacity = '1';
+                        }
+                    }
+                });
             }
         }
         
@@ -1665,6 +1677,9 @@
                         addressSelected = true;
                         hasSelectedFromDropdown = true;
                         locationInput.value = place.formatted_address;
+                        
+                        // Hide inline error message since user selected from dropdown
+                        hideInlineError();
                         
                         // Update global form state
                         window.formState.addressValue = place.formatted_address;
@@ -1717,6 +1732,13 @@
                             continueBtn.disabled = true;
                             continueBtn.style.opacity = '0.5';
                         }
+                    }
+                    
+                    // Show warning message if user has typed something but hasn't selected from dropdown
+                    if (this.value.trim().length > 0 && !addressSelected) {
+                        showInlineError();
+                    } else {
+                        hideInlineError();
                     }
                 });
                 
