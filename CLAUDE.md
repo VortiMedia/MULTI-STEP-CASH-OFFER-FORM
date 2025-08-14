@@ -27,10 +27,15 @@ A sophisticated two-step lead capture form for real estate cash offers with:
    - Helper text needs clarity
 
 ## 📁 Key Files
-- `multi-step-cash-offer-form.html` - Main implementation
-- `multi-step-cash-offer-form.backup.html` - Backup before changes
-- `test-results/` - Test outputs and screenshots
-- `documentation/` - All project docs
+- `index.html` - **Production form** (latest optimized version)
+- `multi-step-cash-offer-form.html` - Development/testing version
+- `iframe-test.html` - Local testing environment
+- `README.md` - Project documentation
+- `DEPLOYMENT-GUIDE.md` - Deployment instructions
+- `framer-integration/` - Framer embedding code & docs
+- `hosting/` - Cloudflare deployment setup
+- `docs/` - Technical documentation
+- `backup/` - Form backups
 
 ## 🔑 Important Context
 - **Formspree Endpoint**: https://formspree.io/f/xblyrjpg
@@ -70,17 +75,48 @@ A sophisticated two-step lead capture form for real estate cash offers with:
 - Mobile-first approach
 
 ## 🔄 Workflow Commands
-- `/project:fix-visual` - Fix all visual issues
-- `/project:debug-form` - Comprehensive debugging
-- `/project:test-ui` - Run UI tests with Playwright
-- `/project:test-mobile` - Test mobile responsiveness
-- `/project:deploy-check` - Pre-deployment verification
+
+### Development
+- **Test locally**: Open `iframe-test.html` in browser
+- **Production test**: Open `index.html` directly
+- **Mobile test**: Use browser dev tools responsive mode
+- **Deploy**: Follow `DEPLOYMENT-GUIDE.md` instructions
+
+### Common Commands
+- `git status` - Check current changes
+- `git add .` && `git commit -m "message"` - Save changes
+- Open `README.md` for full project documentation
+
+## 📂 Project Structure
+```
+multi-step-cash-offer-form/
+├── index.html                 # 🚀 Production form (deploy this)
+├── multi-step-cash-offer-form.html  # 🧪 Development version  
+├── iframe-test.html           # 🔧 Local testing
+├── README.md                  # 📖 Project documentation
+├── DEPLOYMENT-GUIDE.md        # 🚀 Deployment instructions
+├── CLAUDE.md                  # 🤖 AI assistant instructions (this file)
+│
+├── framer-integration/        # 🖼️ Framer website embedding
+│   ├── embed-code.html       # HTML embed component code
+│   ├── head-code.html        # Custom head code for auto-resize
+│   └── README.md             # Integration instructions
+│
+├── hosting/                   # ☁️ Cloudflare deployment setup
+│   ├── dist/                 # Built production files
+│   ├── src/                  # Source files for build
+│   └── scripts/              # Build & deployment scripts
+│
+├── docs/                      # 📚 Technical documentation
+├── backup/                    # 💾 Form backups
+└── assets/                    # 🎨 Screenshots & images
+```
 
 ## 📋 Common Tasks
-1. **Before any changes**: Create backup with timestamp
-2. **Testing**: Run full test suite after each major change
-3. **Debugging**: Use browser DevTools + console logging
-4. **Deployment**: Verify in Framer preview before publishing
+1. **Editing**: Always edit `index.html` for production changes
+2. **Testing**: Use `iframe-test.html` for local development
+3. **Backup**: Automatic backup in `backup/` directory  
+4. **Deployment**: Follow `DEPLOYMENT-GUIDE.md` step-by-step
 
 ## 🚦 Git Workflow
 - Branch naming: `fix/issue-name` or `feature/feature-name`

@@ -6,9 +6,9 @@
     <meta name="description" content="Get a cash offer for your home in 24 hours. No repairs, no showings, close in 7 days.">
     <title>Get Cash for Your Home - Fast, Fair Offer</title>
     
-    <!-- Form Version 1.1.0 - Fixed Formspree submission handling -->
-    <meta name="form-version" content="1.1.0">
-    <meta name="last-updated" content="2025-08-11">
+    <!-- Form Version 1.1.1 - Fixed error message appearing on successful submissions -->
+    <meta name="form-version" content="1.1.1">
+    <meta name="last-updated" content="2025-08-14">
     
     <!-- Preconnect to Google Fonts and APIs -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -301,7 +301,7 @@
         window.dataLayer = window.dataLayer || [];
 
         // Debug mode - set to true to see detailed console logs
-        window.DEBUG_MODE = false; // Production mode - set to true for debugging
+        window.DEBUG_MODE = false; // Production mode - tracking errors now handled gracefully
 
         // Override console.log to only show when in debug mode
         const originalLog = console.log;
@@ -1264,35 +1264,55 @@
                     localStorage.removeItem('partialSubmission');
                     localStorage.removeItem('multiStepFormData');
                     
-                    // Prepare enhanced conversion data
-                    const enhancedData = await prepareEnhancedConversionData(formDataObj);
-                    
-                    // Track conversion with Google Ads
-                    if (window.gtag) {
-                        gtag('event', 'conversion', {
-                            'send_to': 'AW-17041538947/Mz6WCIDe2dMaEIP_hL4_',
-                            'value': 0,
-                            'currency': 'USD',
-                            'enhanced_conversion_data': {
-                                'email': enhancedData.email,
-                                'phone_number': '+1' + enhancedData.phone.replace(/\D/g, ''),
-                                'first_name': enhancedData.firstName,
-                                'last_name': enhancedData.lastName,
-                                'home_address': {
-                                    'street': enhancedData.address,
-                                    'country': 'US'
-                                }
-                            }
-                        });
-                        console.log('📊 Google Ads conversion tracked');
+                    // Prepare enhanced conversion data (non-critical - don't fail submission if this fails)
+                    let enhancedData = null;
+                    try {
+                        enhancedData = await prepareEnhancedConversionData(formDataObj);
+                        console.log('📊 Enhanced conversion data prepared successfully');
+                    } catch (error) {
+                        console.warn('Enhanced conversion data preparation failed (non-critical):', error);
+                        // Create fallback data without hashed values
+                        enhancedData = {
+                            email: formDataObj.email,
+                            phone: formDataObj.phone.replace(/\D/g, ''),
+                            fullName: formDataObj.fullName,
+                            firstName: formDataObj.firstName,
+                            lastName: formDataObj.lastName,
+                            address: formDataObj.address,
+                            postalCode: ''
+                        };
                     }
                     
-                    // Push conversion to parent dataLayer with comprehensive tracking data
+                    // Track conversion with Google Ads (non-critical)
+                    try {
+                        if (window.gtag && enhancedData) {
+                            gtag('event', 'conversion', {
+                                'send_to': 'AW-17041538947/Mz6WCIDe2dMaEIP_hL4_',
+                                'value': 0,
+                                'currency': 'USD',
+                                'enhanced_conversion_data': {
+                                    'email': enhancedData.email,
+                                    'phone_number': '+1' + enhancedData.phone.replace(/\D/g, ''),
+                                    'first_name': enhancedData.firstName,
+                                    'last_name': enhancedData.lastName,
+                                    'home_address': {
+                                        'street': enhancedData.address,
+                                        'country': 'US'
+                                    }
+                                }
+                            });
+                            console.log('📊 Google Ads conversion tracked successfully');
+                        }
+                    } catch (error) {
+                        console.warn('Google Ads tracking failed (non-critical):', error);
+                    }
+                    
+                    // Push conversion to parent dataLayer with comprehensive tracking data (non-critical)
                     try {
                         const targetWindow = window.parent !== window ? window.parent : window;
                         targetWindow.dataLayer = targetWindow.dataLayer || [];
                         
-                        targetWindow.dataLayer.push({
+                        const trackingData = {
                             'event': 'cash_offer_conversion',
                             'form_type': 'multi_step',
                             'conversion_data': {
@@ -1309,14 +1329,18 @@
                                 'last_name': enhancedData.lastName,
                                 'address': enhancedData.address,
                                 'postal_code': enhancedData.postalCode
-                            },
-                            'enhanced_conversions': enhancedData.enhanced_conversion_data
-                        });
+                            }
+                        };
                         
-                        console.log('📊 DataLayer conversion pushed to parent window');
+                        // Only add enhanced conversions if they were successfully prepared
+                        if (enhancedData.enhanced_conversion_data) {
+                            trackingData.enhanced_conversions = enhancedData.enhanced_conversion_data;
+                        }
+                        
+                        targetWindow.dataLayer.push(trackingData);
+                        console.log('📊 DataLayer conversion pushed to parent window successfully');
                     } catch (error) {
-                        console.warn('Tracking error (non-critical):', error);
-                        // Continue with success flow - don't show error to user
+                        console.warn('DataLayer tracking failed (non-critical):', error);
                     }
                     
                     // Show success page
@@ -1725,4 +1749,4 @@
 </script>
 </body>
 </html>
-<!-- Updated: Mon Aug 11 13:25:01 EDT 2025 -->
+<!-- Updated: Wed Aug 14 2025 - Fixed error message appearing on successful form submissions by wrapping tracking operations in try-catch blocks -->
