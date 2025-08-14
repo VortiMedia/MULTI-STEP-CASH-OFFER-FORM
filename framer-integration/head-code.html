@@ -1,0 +1,70 @@
+<!-- Framer Custom Head Code -->
+<!-- Add this to Framer: Settings → Custom Code → Head (End of Head tag) -->
+
+<script>
+(function() {
+  // Auto-resize iframe based on content
+  window.addEventListener('message', function(e) {
+    // Security: Only accept messages from your deployed domain
+    // Update this to match your deployment URL
+    // if (!e.origin.includes('pages.dev') && !e.origin.includes('yourdomain.com')) return;
+    
+    const iframe = document.getElementById('cash-offer-form');
+    if (!iframe) return;
+    
+    // Handle resize messages
+    if (e.data && e.data.type === 'resize-embed') {
+      const height = parseInt(e.data.height) || 180;
+      iframe.style.height = height + 'px';
+      iframe.style.minHeight = height + 'px';
+      
+      // Also resize Framer container if needed
+      const container = iframe.closest('[data-framer-component-type]');
+      if (container) {
+        container.style.minHeight = height + 'px';
+        container.style.height = 'auto';
+      }
+    }
+    
+    // Forward tracking events to Google Analytics
+    if (e.data && e.data.type === 'tracking-event') {
+      if (window.gtag) {
+        window.gtag('event', e.data.event, e.data.data);
+      }
+      if (window.dataLayer) {
+        window.dataLayer.push({
+          event: e.data.event,
+          ...e.data.payload
+        });
+      }
+    }
+  });
+  
+  // Set initial height
+  window.addEventListener('DOMContentLoaded', function() {
+    const iframe = document.getElementById('cash-offer-form');
+    if (iframe) {
+      iframe.style.height = '180px';
+      iframe.style.minHeight = '180px';
+    }
+  });
+})();
+</script>
+
+<style>
+/* Ensure iframe displays correctly in Framer */
+#cash-offer-form {
+  width: 100% !important;
+  max-width: 100% !important;
+  border: none !important;
+  display: block !important;
+  transition: height 0.3s ease !important;
+}
+
+/* Fix Framer container sizing */
+[data-framer-component-type="Embed"] {
+  overflow: visible !important;
+  min-height: 180px !important;
+  transition: min-height 0.3s ease !important;
+}
+</style>
